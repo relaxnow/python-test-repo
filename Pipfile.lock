@@ -7,8 +7,8 @@
         "pipfile-spec": 6
         "sources": [
             {
-                "name": "codeartifact",
-                "url": "https://aws:${CODEARTIFACT_AUTH_TOKEN}@annalect-pii-288489547540.d.codeartifact.us-east-1.amazonaws.com/pypi/ann10pvtshared-python-repository/simple/",
+                "name": "pypi",
+                "url": "https://pypi.org/simple",
                 "verify_ssl": true
             }
         ]
