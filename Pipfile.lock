@@ -3,10 +3,7 @@
         "hash": {
             "sha256": "73bbc31824e706b9c63e69315af1bd8bdc20f4244685c1ba69ee3e45478450f8"
         },
-        "pipfile-spec": 6,
-        "requires": {
-            "python_version": "3.12.7"
-        },
+        "pipfile-spec": 6
         "sources": [
             {
                 "name": "codeartifact",
