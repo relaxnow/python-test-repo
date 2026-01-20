@@ -79,6 +79,12 @@ jobs:
           fi
       - name: Pipenv sync
         run: |
+          which virtualenv
+          virtualenv /tmp/dep-venv4416362892064725474 --quiet --no-download
+          which pip
+          pip install -r requirements.txt --disable-pip-version-check
+          pip install -r requirements.txt --disable-pip-version-check
+          which pipenv
           pipenv sync
 #      - name: Check for requirements files and create Pipfile.lock
 #        run: |
