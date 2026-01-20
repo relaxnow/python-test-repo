@@ -1,0 +1,123 @@
+name: Veracode Software Composition Analysis
+
+run-name: Software Composition Analysis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  veracode-sca-scan:
+    runs-on: ubuntu-latest
+    name: Veracode Component Analysis
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          path: 'veracode-helper'
+      - name: Find yarn JS apps using workspaces
+        run: |
+          if [ -f "package.json" ] && [ -f "pnpm-lock.yaml" ] && [ -f "pnpm-workspace.yaml" ]; then
+            echo "- The file package.json, pnpm-lock.yml and pnpm-workspace.yaml exist. This looks like a PNPM workspace project."
+            if grep -q "workspaces" "package.json"; then
+              echo "-- The package.json file contains workspaces - running PNPM lockfile generator"
+          	  node veracode-helper/helper/pnpm-helper.js --folder '/home/runner/work/veracode/veracode' --intRepoPrefix '${{ github.event.client_payload.repository.owner }}' --repoName '${{ github.event.client_payload.repository.name }}'
+            else
+              echo "-- The package.json file does not contain workspace - this will fail - exiting"
+            fi
+          elif [ -f "package.json" ] && [ ! -f "pnpm-lock.yml" ] && [ ! -f "pnpm-workspace.yaml" ]; then
+          	if grep -q "workspaces" "package.json"; then
+          		echo "- The package.json file exists, and it contains 'workspaces'."
+          		if grep -q "yarn" "package.json"; then
+          			echo "-- Yarn was identified on the package.json file"
+          			version=$(grep 'yarn' package.json | grep -oE '[0-9]' | head -n 1)
+          			if [ -z "$version" ]; then
+          				echo "-- The yarn version could not be identified."
+          			else
+          				echo "-- The yarn version is: $version"
+          
+          				if [ $version -lt "3" ]; then
+          					echo "---- Running v2 lockfile generator"
+          					node veracode-helper/helper/yarn-lock-file-generator-v2.js --folder /home/runner/work/veracode/veracode
+          				elif [ $version -ge "3" ]; then
+          					echo "---- Running v3 lockfile generator"
+          					node veracode-helper/helper/yarn-lock-file-generator-v3.js --folder /home/runner/work/veracode/veracode
+          				fi
+          			fi
+          		else
+          			echo "- Yarn was not identified on the package.json file"
+              fi
+          	else
+                          echo "- The package.json file exists, but it does not contain 'workspaces'."
+          	fi
+          else
+          	echo "The package.json file does not exist."
+          fi
+          rm -rf veracode-helper
+      - name: Python version
+        run: |
+          python3 --version
+          pip3 --version
+#      - name: Install python
+#        uses: actions/setup-python@v6
+#        with:
+#          python-version: '3.12.7'
+
+      - name: Python version
+        run: |
+          python3 --version
+          pip3 --version
+      - name: Check for pipfile.lock and install pipenv
+        run: |
+          if [ -f pipfile.lock ] || [ -f Pipfile.lock ]; then
+            echo "- pipfile.lock found need to install pipenv"
+            python3 -m pip install --upgrade pip
+            python3 -m pip install pipenv
+          else
+            echo "- No pipfile.lock files found. Skipping pipen install process."
+          fi
+      - name: Pipenv sync
+        run: |
+          pipenv sync
+#      - name: Check for requirements files and create Pipfile.lock
+#        run: |
+#          if [ -f "requirements.txt" ] || [ -f "requirements-dev.txt" ] || [ -f "dev-requirements.txt" ]; then
+#            if [ -f "Pipfile.lock" ]; then
+#              echo "- Requirements file(s) found but Pipfile.lock already exists. Skipping pip install process."
+#            else
+#              echo "- Requirements file(s) found. Creating Pipfile.lock..."
+#              if [ -f "requirements.txt" ]; then
+#                echo "-- Installing from requirements.txt"
+#                pip install -r requirements.txt
+#              elif [ -f "requirements-dev.txt" ]; then
+#                echo "-- Installing from requirements-dev.txt"
+#                pip install -r requirements-dev.txt
+#              elif [ -f "dev-requirements.txt" ]; then
+#                echo "-- Installing from dev-requirements.txt"
+#                pip install -r dev-requirements.txt
+#              fi
+#              echo "-- Pipfile.lock creation process completed."
+#            fi
+#          elif [ -f pipfile.lock ] || [ -f Pipfile.lock ]; then
+#            echo "- pipfile.lock found need to install pipenv"
+#            python3 -m pip install --upgrade pip
+#            python3 -m pip install pipenv
+#          else
+#            echo "- No requirements files found. Skipping pip install process."
+#          fi 
+
+#      - name: Run Veracode SCA
+#        env:
+#          SRCCLR_API_TOKEN: ${{ secrets.VERACODE_AGENT_TOKEN }}
+#          JAVA_OPTS: -Xms2g -Xmx4g
+#        uses: veracode/veracode-sca@issueGenerationWorflowApp
+#        with:
+#          github_token: ${{ github.event.client_payload.token }}
+#          create-issues: false
+#          dependabot_alerts: false
+#          repo_owner: ${{ github.event.client_payload.repository.owner }}
+#          repo_name: ${{ github.event.client_payload.repository.name }}
+#          recursive: true
+#          allow-dirty: true
+#          debug: true
